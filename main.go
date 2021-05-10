@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 
@@ -9,11 +10,11 @@ import (
 
 func main() {
 	var file []byte
-	var torrentFile *torrentfile.TorrentFile
+	var torrentFile *torrentfile.Torrent
 	var err error
 
 	fmt.Println("Hello from home-torrent")
-	if file, err = ioutil.ReadFile("./sample.torrent"); err != nil {
+	if file, err = ioutil.ReadFile("./single-file.torrent"); err != nil {
 		panic(err)
 	}
 
@@ -21,5 +22,7 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println(torrentFile)
+	jsonTorrent, _ := json.Marshal(torrentFile)
+
+	ioutil.WriteFile("./single-file.json", jsonTorrent, 0644)
 }

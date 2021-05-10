@@ -3,16 +3,23 @@ package torrentfile
 import (
 	"bytes"
 	"crypto/sha1"
+	"errors"
 	"fmt"
 
 	"github.com/jackpal/bencode-go"
 )
 
+type bencodeFile struct {
+	Path   []string `bencode:"path"`
+	Length int      `bencode:"length"`
+}
+
 type bencodeInfo struct {
-	Pieces      string `bencode:"pieces"`
-	PieceLength int    `bencode:"piece length"`
-	Length      int    `bencode:"length"`
-	Name        string `bencode:"name"`
+	Pieces      string        `bencode:"pieces"`
+	PieceLength int           `bencode:"piece length"`
+	Length      int           `bencode:"length"`
+	Files       []bencodeFile `bencode:"files"`
+	Name        string        `bencode:"name"`
 }
 
 type bencodeTorrent struct {
@@ -46,7 +53,7 @@ func (bencodeTorrent *bencodeTorrent) decodePieceHashes() ([][sha1.Size]byte, er
 	return hashes, nil
 }
 
-func (bencodeTorrent *bencodeTorrent) toTorrentFile() (*TorrentFile, error) {
+func (bencodeTorrent *bencodeTorrent) toTorrentFile() (*Torrent, error) {
 	var err error
 	var infoHash [sha1.Size]byte
 	var pieceHashes [][sha1.Size]byte
@@ -59,14 +66,34 @@ func (bencodeTorrent *bencodeTorrent) toTorrentFile() (*TorrentFile, error) {
 		return nil, err
 	}
 
-	torrentFile := TorrentFile{
+	if bencodeTorrent.Info.Files != nil && bencodeTorrent.Info.Length != 0 {
+		return nil, errors.New("Found both `files` and `length` keys")
+	}
+
+	torrent := &Torrent{
 		Announce:    bencodeTorrent.Announce,
 		InfoHash:    infoHash,
 		PieceHashes: pieceHashes,
 		PieceLength: bencodeTorrent.Info.PieceLength,
-		Length:      bencodeTorrent.Info.Length,
-		Name:        bencodeTorrent.Info.Name,
 	}
 
-	return &torrentFile, nil
+	if bencodeTorrent.Info.Length != 0 {
+		file := &TorrentFile{
+			Path:   []string{bencodeTorrent.Info.Name},
+			Length: bencodeTorrent.Info.Length,
+		}
+
+		torrent.Files = []*TorrentFile{file}
+	} else {
+		files := make([]*TorrentFile, len(bencodeTorrent.Info.Files))
+		for i, file := range bencodeTorrent.Info.Files {
+			files[i] = &TorrentFile{
+				Length: file.Length,
+				Path:   file.Path,
+			}
+		}
+		torrent.Files = files
+	}
+
+	return torrent, nil
 }
