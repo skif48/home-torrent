@@ -22,6 +22,9 @@ import (
 //go:embed apitestfixtures/single-file-preview.json
 var singleFilePreview string
 
+//go:embed apitestfixtures/multi-file-preview.json
+var multiFilePreview string
+
 func convertFixtureToMultipartFile(path string, fieldName string) (*bytes.Buffer, string) {
 	var err error
 	var file *os.File
@@ -84,6 +87,29 @@ var _ = Describe("/api/v1/torrents", func() {
 			}
 
 			Expect(reflect.DeepEqual(actualResponse, expectedResponse)).To(Equal(true))
+		})
+
+		It("should successfully preview a multi file torrent", func() {
+			multifFileTorrentMultipart, contentType := convertFixtureToMultipartFile("../testfixtures/multi-file.torrent", "torrent")
+			resRecorder := performPostRequest(router, "/api/v1/torrents/preview", contentType, multifFileTorrentMultipart)
+			Expect(resRecorder.Result().StatusCode).To(Equal(200))
+
+			actualResponse := make(map[string]interface{})
+			expectedResponse := make(map[string]interface{})
+			if err := json.Unmarshal(resRecorder.Body.Bytes(), &actualResponse); err != nil {
+				panic(err)
+			}
+			if err := json.Unmarshal([]byte(multiFilePreview), &expectedResponse); err != nil {
+				panic(err)
+			}
+
+			Expect(reflect.DeepEqual(actualResponse, expectedResponse)).To(Equal(true))
+		})
+
+		It("should respond with 400 in case of malformed torrent file", func() {
+			malformedTorrentMultipart, contentType := convertFixtureToMultipartFile("../testfixtures/malformed.torrent", "torrent")
+			resRecorder := performPostRequest(router, "/api/v1/torrents/preview", contentType, malformedTorrentMultipart)
+			Expect(resRecorder.Result().StatusCode).To(Equal(400))
 		})
 	})
 })
