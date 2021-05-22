@@ -1,28 +1,11 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-
-	"vladusenko.io/home-torrent/torrentfile"
+	"vladusenko.io/home-torrent/api"
 )
 
 func main() {
-	var file []byte
-	var torrentFile *torrentfile.Torrent
-	var err error
+	router := api.SetupRouter()
 
-	fmt.Println("Hello from home-torrent")
-	if file, err = ioutil.ReadFile("./single-file.torrent"); err != nil {
-		panic(err)
-	}
-
-	if torrentFile, err = torrentfile.Parse(file); err != nil {
-		panic(err)
-	}
-
-	jsonTorrent, _ := json.Marshal(torrentFile)
-
-	ioutil.WriteFile("./single-file.json", jsonTorrent, 0644)
+	router.Run(":8080")
 }
