@@ -2,12 +2,15 @@ package api_test
 
 import (
 	"bytes"
+	_ "embed"
+	"encoding/json"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -15,6 +18,9 @@ import (
 	. "github.com/onsi/gomega"
 	"vladusenko.io/home-torrent/api"
 )
+
+//go:embed apitestfixtures/single-file-preview.json
+var singleFilePreview string
 
 func convertFixtureToMultipartFile(path string, fieldName string) (*bytes.Buffer, string) {
 	var err error
@@ -67,6 +73,17 @@ var _ = Describe("/api/v1/torrents", func() {
 			singleFileTorrentMultipart, contentType := convertFixtureToMultipartFile("../testfixtures/single-file.torrent", "torrent")
 			resRecorder := performPostRequest(router, "/api/v1/torrents/preview", contentType, singleFileTorrentMultipart)
 			Expect(resRecorder.Result().StatusCode).To(Equal(200))
+
+			actualResponse := make(map[string]interface{})
+			expectedResponse := make(map[string]interface{})
+			if err := json.Unmarshal(resRecorder.Body.Bytes(), &actualResponse); err != nil {
+				panic(err)
+			}
+			if err := json.Unmarshal([]byte(singleFilePreview), &expectedResponse); err != nil {
+				panic(err)
+			}
+
+			Expect(reflect.DeepEqual(actualResponse, expectedResponse)).To(Equal(true))
 		})
 	})
 })
