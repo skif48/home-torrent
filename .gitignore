@@ -1,4 +1,5 @@
-config.yml
+config.json
+home-torrent
 
 # Binaries for programs and plugins
 *.exe
