@@ -1,0 +1,9 @@
+{
+  "title": "Home Torrent Config Schema",
+  "type": "object",
+  "properties": {
+    "http_port": {
+      "type": "integer"
+    }
+  }
+}
