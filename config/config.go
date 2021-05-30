@@ -20,7 +20,12 @@ var configSchema string
 
 var config *Config = nil
 var schema *gojsonschema.Schema = nil
-var once sync.Once
+var once *sync.Once
+
+// NOTE for unit tests only
+func Reset() {
+	once = new(sync.Once)
+}
 
 func GetConfig(path string) (*Config, error) {
 	var err error
