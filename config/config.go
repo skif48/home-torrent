@@ -1,6 +1,7 @@
 package config
 
 import (
+	"crypto/rand"
 	_ "embed"
 	"encoding/json"
 	"errors"
@@ -20,9 +21,16 @@ type LoggingConfig struct {
 	MaxBackups int    `json:"max_backups"`
 	MaxAge     int    `json:"max_age"`
 }
+
+type TorrentConfig struct {
+	PeerId   [20]byte
+	PeerPort uint16
+}
+
 type Config struct {
 	HttpPort int            `json:"http_port"`
 	Logging  *LoggingConfig `json:"logging"`
+	Torrent  *TorrentConfig `json:"torrent"`
 }
 
 //go:embed schema.json
@@ -37,7 +45,7 @@ func Reset() {
 	once = new(sync.Once)
 }
 
-func GetConfig(path string) (*Config, error) {
+func LoadConfig(path string) (*Config, error) {
 	var err error
 	once.Do(func() {
 		schemaLoader := gojsonschema.NewStringLoader(configSchema)
@@ -50,10 +58,22 @@ func GetConfig(path string) (*Config, error) {
 	return config, err
 }
 
+func GetConfig() (*Config, error) {
+	if config == nil {
+		return nil, errors.New("config has not been parsed yet")
+	}
+	return config, nil
+}
+
 func parseAndValidateConfig(path string) (*Config, error) {
 	var raw []byte
 	var validationResult *gojsonschema.Result
+	var peerId [20]byte
 	var err error
+
+	if _, err := rand.Read(peerId[:]); err != nil {
+		return nil, err
+	}
 
 	if raw, err = ioutil.ReadFile(path); err != nil {
 		return nil, err
@@ -79,6 +99,10 @@ func parseAndValidateConfig(path string) (*Config, error) {
 			MaxSize:    10,
 			MaxBackups: 25,
 			MaxAge:     30,
+		},
+		Torrent: &TorrentConfig{
+			PeerId:   peerId,
+			PeerPort: defaults.DEFAULT_TORRENT_PEER_PORT,
 		},
 	}
 
