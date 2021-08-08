@@ -1,6 +1,7 @@
 config.json
 home-torrent
 logs
+__debug_bin
 
 # Binaries for programs and plugins
 *.exe
