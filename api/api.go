@@ -14,6 +14,7 @@ func SetupRouter() *gin.Engine {
 	{
 		torrentGroup := apiV1.Group("/torrents")
 		torrentGroup.POST("/preview", torrent.PreviewHandler)
+		torrentGroup.POST("/preview-peers", torrent.RequestPeersHandler)
 	}
 
 	return router

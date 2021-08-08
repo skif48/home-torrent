@@ -13,7 +13,7 @@ func main() {
 	var err error
 	var conf *config.Config
 
-	if conf, err = config.GetConfig(defaults.DEFAULT_CONFIG_PATH); err != nil {
+	if conf, err = config.LoadConfig(defaults.DEFAULT_CONFIG_PATH); err != nil {
 		panic(err)
 	}
 

@@ -19,7 +19,7 @@ var _ = Describe("Config", func() {
 	})
 
 	It("Should parse and validate a config file", func() {
-		conf, err := config.GetConfig("./testfixtures/simple_config.json")
+		conf, err := config.LoadConfig("./testfixtures/simple_config.json")
 
 		Expect(err).To(BeNil())
 		Expect(conf).To(Equal(&config.Config{
@@ -28,7 +28,7 @@ var _ = Describe("Config", func() {
 	})
 
 	It("Should return error for an invalid config file", func() {
-		conf, err := config.GetConfig("./testfixtures/invalid_config.json")
+		conf, err := config.LoadConfig("./testfixtures/invalid_config.json")
 
 		Expect(conf).To(BeNil())
 		Expect(err).NotTo(BeNil())

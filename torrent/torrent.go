@@ -2,6 +2,12 @@ package torrent
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
+	"net/http"
+	"net/url"
+	"strconv"
+	"time"
 
 	"github.com/jackpal/bencode-go"
 )
@@ -19,6 +25,12 @@ type Torrent struct {
 	Files       []*TorrentFile `json:"files"`
 }
 
+type TrackerResponse struct {
+	FailureReason string `bencode:"failure reason"`
+	Interval      int    `bencode:"interval"`
+	Peers         string `bencode:"peers"`
+}
+
 func Parse(rawFile []byte) (*Torrent, error) {
 	var err error
 	bto := bencodeTorrent{}
@@ -27,4 +39,64 @@ func Parse(rawFile []byte) (*Torrent, error) {
 	}
 
 	return bto.toTorrentFile()
+}
+
+func (torrent *Torrent) TotalLength() int {
+	var length int
+
+	for _, file := range torrent.Files {
+		length += file.Length
+	}
+
+	return length
+}
+
+func (torrent *Torrent) buildHttpTrackerUrl(peerId [20]byte, port uint16) (string, error) {
+	base, err := url.Parse(torrent.Announce)
+	if err != nil {
+		return "", err
+	}
+
+	fmt.Println(string(torrent.InfoHash[:]))
+
+	params := url.Values{
+		"info_hash":  []string{string(torrent.InfoHash[:])},
+		"peer_id":    []string{string(peerId[:])},
+		"port":       []string{strconv.Itoa(int(port))},
+		"uploaded":   []string{"0"},
+		"downloaded": []string{"0"},
+		"compact":    []string{"1"},
+		"left":       []string{strconv.Itoa(torrent.TotalLength())},
+	}
+
+	base.RawQuery = base.RawQuery + params.Encode()
+
+	return base.String(), nil
+}
+
+func (torrent *Torrent) RequestPeers(peerId [20]byte, port uint16) ([]Peer, error) {
+	url, err := torrent.buildHttpTrackerUrl(peerId, port)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println(url)
+
+	httpClient := &http.Client{Timeout: 15 * time.Second}
+	response, err := httpClient.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	trackerResponse := TrackerResponse{}
+	if err = bencode.Unmarshal(response.Body, &trackerResponse); err != nil {
+		return nil, err
+	}
+
+	if trackerResponse.FailureReason != "" {
+		return nil, errors.New("Failure identified in tracker response: " + trackerResponse.FailureReason)
+	}
+
+	return UnmarshalPeer([]byte(trackerResponse.Peers))
 }
