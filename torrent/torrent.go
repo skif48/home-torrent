@@ -2,6 +2,7 @@ package torrent
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -25,8 +26,9 @@ type Torrent struct {
 }
 
 type TrackerResponse struct {
-	Interval int    `bencode:"interval"`
-	Peers    string `bencode:"peers"`
+	FailureReason string `bencode:"failure reason"`
+	Interval      int    `bencode:"interval"`
+	Peers         string `bencode:"peers"`
 }
 
 func Parse(rawFile []byte) (*Torrent, error) {
@@ -55,12 +57,15 @@ func (torrent *Torrent) buildHttpTrackerUrl(peerId [20]byte, port uint16) (strin
 		return "", err
 	}
 
+	fmt.Println(string(torrent.InfoHash[:]))
+
 	params := url.Values{
 		"info_hash":  []string{string(torrent.InfoHash[:])},
 		"peer_id":    []string{string(peerId[:])},
 		"port":       []string{strconv.Itoa(int(port))},
 		"uploaded":   []string{"0"},
 		"downloaded": []string{"0"},
+		"compact":    []string{"1"},
 		"left":       []string{strconv.Itoa(torrent.TotalLength())},
 	}
 
@@ -87,6 +92,10 @@ func (torrent *Torrent) RequestPeers(peerId [20]byte, port uint16) ([]Peer, erro
 	trackerResponse := TrackerResponse{}
 	if err = bencode.Unmarshal(response.Body, &trackerResponse); err != nil {
 		return nil, err
+	}
+
+	if trackerResponse.FailureReason != "" {
+		return nil, errors.New("Failure identified in tracker response: " + trackerResponse.FailureReason)
 	}
 
 	return UnmarshalPeer([]byte(trackerResponse.Peers))

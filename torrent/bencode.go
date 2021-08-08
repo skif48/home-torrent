@@ -17,8 +17,8 @@ type bencodeFile struct {
 type bencodeInfo struct {
 	Pieces      string        `bencode:"pieces"`
 	PieceLength int           `bencode:"piece length"`
-	Length      int           `bencode:"length"`
-	Files       []bencodeFile `bencode:"files"`
+	Length      int           `bencode:"length,omitempty"`
+	Files       []bencodeFile `bencode:"files,omitempty"`
 	Name        string        `bencode:"name"`
 }
 
@@ -29,10 +29,15 @@ type bencodeTorrent struct {
 
 func (bencodeTorrent *bencodeTorrent) infoHash() ([sha1.Size]byte, error) {
 	var buf bytes.Buffer
+	var hash [sha1.Size]byte
+
 	if err := bencode.Marshal(&buf, bencodeTorrent.Info); err != nil {
 		return [sha1.Size]byte{}, err
 	}
-	hash := sha1.Sum(buf.Bytes())
+	var hasher = sha1.New()
+	hasher.Write(buf.Bytes())
+	copy(hash[:], hasher.Sum(nil))
+
 	return hash, nil
 }
 
@@ -45,7 +50,7 @@ func (bencodeTorrent *bencodeTorrent) decodePieceHashes() ([][sha1.Size]byte, er
 	}
 
 	hashesAmount := len(buf) / sha1.Size
-	hashes := make([][20]byte, hashesAmount)
+	hashes := make([][sha1.Size]byte, hashesAmount)
 
 	for i := 0; i < hashesAmount; i++ {
 		copy(hashes[i][:], buf[i*sha1.Size:(i+1)*sha1.Size])
