@@ -1,4 +1,4 @@
-module vladusenko.io/home-torrent
+module github.com/home-torrent
 
 go 1.16
 
@@ -16,6 +16,7 @@ require (
 	github.com/onsi/ginkgo v1.16.2
 	github.com/onsi/gomega v1.12.0
 	github.com/rs/zerolog v1.22.0 // indirect
+	github.com/samber/do v1.6.0 // indirect
 	github.com/ugorji/go v1.2.6 // indirect
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
 	github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77 // indirect

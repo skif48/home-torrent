@@ -5,7 +5,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"os"
 	"sync"
 
 	"github.com/xeipuuv/gojsonschema"
@@ -75,7 +75,7 @@ func parseAndValidateConfig(path string) (*Config, error) {
 		return nil, err
 	}
 
-	if raw, err = ioutil.ReadFile(path); err != nil {
+	if raw, err = os.ReadFile(path); err != nil {
 		return nil, err
 	}
 
