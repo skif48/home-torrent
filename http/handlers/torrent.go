@@ -5,19 +5,22 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/home-torrent/apihelpers"
-	"github.com/home-torrent/config"
-	"github.com/home-torrent/torrent"
+	"github.com/samber/do"
+	"github.com/skif48/home-torrent/apihelpers"
+	"github.com/skif48/home-torrent/config"
+	"github.com/skif48/home-torrent/torrent"
 )
 
 type TorrentHandler struct {
 	config *config.Config
 }
 
-func NewTorrentHandler(config *config.Config) *TorrentHandler {
+func NewTorrentHandler(i *do.Injector) (*TorrentHandler, error) {
+	config := do.MustInvoke[*config.Config](i)
+
 	return &TorrentHandler{
 		config: config,
-	}
+	}, nil
 }
 
 func (t *TorrentHandler) Preview(ctx *gin.Context) {

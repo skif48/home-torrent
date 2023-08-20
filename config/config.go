@@ -6,6 +6,7 @@ import (
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/v2"
+	"github.com/samber/do"
 )
 
 type LoggingConfig struct {
@@ -13,8 +14,8 @@ type LoggingConfig struct {
 }
 
 type TorrentConfig struct {
-	PeerId   [20]byte
-	PeerPort uint16
+	PeerId   [20]byte `koanf:"peer_id"`
+	PeerPort uint16   `koanf:"peer_port"`
 }
 
 type Config struct {
@@ -23,21 +24,21 @@ type Config struct {
 	Torrent  *TorrentConfig `koanf:"torrent"`
 }
 
-func InitConfig() (error, *Config) {
+func NewConfig(i *do.Injector) (*Config, error) {
 	path := os.Getenv(`CONFIG_PATH`)
 	if path == "" {
 		path = "./torrent_config.yaml"
 	}
 	k := koanf.New(".")
 	if err := k.Load(file.Provider(path), yaml.Parser()); err != nil {
-		return err, nil
+		return nil, err
 	}
 
 	config := &Config{}
 
 	if err := k.UnmarshalWithConf(".", config, koanf.UnmarshalConf{Tag: "koanf"}); err != nil {
-		return err, nil
+		return nil, err
 	}
 
-	return nil, config
+	return config, nil
 }
