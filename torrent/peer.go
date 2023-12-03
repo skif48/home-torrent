@@ -13,7 +13,7 @@ type Peer struct {
 
 const peerByteSize = 6 // 4 for IP + 2 for port
 
-func UnmarshalPeer(peersBinary []byte) ([]Peer, error) {
+func UnmarshalPeers(peersBinary []byte) ([]Peer, error) {
 	if len(peersBinary)%peerByteSize != 0 {
 		return nil, errors.New("malformed peers binary representation received")
 	}

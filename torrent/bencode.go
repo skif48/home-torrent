@@ -27,11 +27,11 @@ type bencodeTorrent struct {
 	Info     bencodeInfo `bencode:"info"`
 }
 
-func (bencodeTorrent *bencodeTorrent) infoHash() ([sha1.Size]byte, error) {
+func (b *bencodeTorrent) infoHash() ([sha1.Size]byte, error) {
 	var buf bytes.Buffer
 	var hash [sha1.Size]byte
 
-	if err := bencode.Marshal(&buf, bencodeTorrent.Info); err != nil {
+	if err := bencode.Marshal(&buf, b.Info); err != nil {
 		return [sha1.Size]byte{}, err
 	}
 	var hasher = sha1.New()
@@ -41,8 +41,8 @@ func (bencodeTorrent *bencodeTorrent) infoHash() ([sha1.Size]byte, error) {
 	return hash, nil
 }
 
-func (bencodeTorrent *bencodeTorrent) decodePieceHashes() ([][sha1.Size]byte, error) {
-	buf := []byte(bencodeTorrent.Info.Pieces)
+func (b *bencodeTorrent) decodePieceHashes() ([][sha1.Size]byte, error) {
+	buf := []byte(b.Info.Pieces)
 
 	if len(buf)%sha1.Size != 0 {
 		err := fmt.Errorf("Received malformed pieces of length %d", len(buf))
@@ -58,40 +58,40 @@ func (bencodeTorrent *bencodeTorrent) decodePieceHashes() ([][sha1.Size]byte, er
 	return hashes, nil
 }
 
-func (bencodeTorrent *bencodeTorrent) toTorrentFile() (*Torrent, error) {
+func (b *bencodeTorrent) toTorrentFile() (*Torrent, error) {
 	var err error
 	var infoHash [sha1.Size]byte
 	var pieceHashes [][sha1.Size]byte
 
-	if infoHash, err = bencodeTorrent.infoHash(); err != nil {
+	if infoHash, err = b.infoHash(); err != nil {
 		return nil, err
 	}
 
-	if pieceHashes, err = bencodeTorrent.decodePieceHashes(); err != nil {
+	if pieceHashes, err = b.decodePieceHashes(); err != nil {
 		return nil, err
 	}
 
-	if bencodeTorrent.Info.Files != nil && bencodeTorrent.Info.Length != 0 {
+	if b.Info.Files != nil && b.Info.Length != 0 {
 		return nil, errors.New("Found both `files` and `length` keys")
 	}
 
 	torrent := &Torrent{
-		Announce:    bencodeTorrent.Announce,
+		Announce:    b.Announce,
 		InfoHash:    infoHash,
 		PieceHashes: pieceHashes,
-		PieceLength: bencodeTorrent.Info.PieceLength,
+		PieceLength: b.Info.PieceLength,
 	}
 
-	if bencodeTorrent.Info.Length != 0 {
+	if b.Info.Length != 0 {
 		file := &TorrentFile{
-			Path:   []string{bencodeTorrent.Info.Name},
-			Length: bencodeTorrent.Info.Length,
+			Path:   []string{b.Info.Name},
+			Length: b.Info.Length,
 		}
 
 		torrent.Files = []*TorrentFile{file}
 	} else {
-		files := make([]*TorrentFile, len(bencodeTorrent.Info.Files))
-		for i, file := range bencodeTorrent.Info.Files {
+		files := make([]*TorrentFile, len(b.Info.Files))
+		for i, file := range b.Info.Files {
 			files[i] = &TorrentFile{
 				Length: file.Length,
 				Path:   file.Path,

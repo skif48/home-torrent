@@ -1,27 +1,20 @@
 package main
 
 import (
-	"strconv"
-
-	"vladusenko.io/home-torrent/api"
-	"vladusenko.io/home-torrent/config"
-	"vladusenko.io/home-torrent/defaults"
-	"vladusenko.io/home-torrent/log"
+	"github.com/samber/do"
+	"github.com/skif48/home-torrent/config"
+	"github.com/skif48/home-torrent/http"
+	"github.com/skif48/home-torrent/http/handlers"
 )
 
 func main() {
-	var err error
-	var conf *config.Config
+	injector := do.New()
+	do.Provide(injector, config.NewConfig)
+	do.Provide(injector, handlers.NewTorrentHandler)
+	do.Provide(injector, http.NewServer)
 
-	if conf, err = config.LoadConfig(defaults.DEFAULT_CONFIG_PATH); err != nil {
+	server := do.MustInvoke[*http.Server](injector)
+	if err := server.ListenAndServe(); err != nil {
 		panic(err)
 	}
-
-	log.Configure(conf.Logging)
-	logger := log.GetLogger()
-	router := api.SetupRouter()
-	logger.Info().Msg("GIN Router has been set up")
-	logger.Info().Msgf("Setting up http listener on port %d", conf.HttpPort)
-
-	router.Run(":" + strconv.Itoa(conf.HttpPort))
 }

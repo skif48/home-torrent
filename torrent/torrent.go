@@ -3,7 +3,6 @@ package torrent
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -51,13 +50,11 @@ func (torrent *Torrent) TotalLength() int {
 	return length
 }
 
-func (torrent *Torrent) buildHttpTrackerUrl(peerId [20]byte, port uint16) (string, error) {
+func (torrent *Torrent) buildHttpTrackerUrl(peerId []byte, port uint16) (*url.URL, error) {
 	base, err := url.Parse(torrent.Announce)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-
-	fmt.Println(string(torrent.InfoHash[:]))
 
 	params := url.Values{
 		"info_hash":  []string{string(torrent.InfoHash[:])},
@@ -71,26 +68,24 @@ func (torrent *Torrent) buildHttpTrackerUrl(peerId [20]byte, port uint16) (strin
 
 	base.RawQuery = base.RawQuery + params.Encode()
 
-	return base.String(), nil
+	return base, nil
 }
 
-func (torrent *Torrent) RequestPeers(peerId [20]byte, port uint16) ([]Peer, error) {
+func (torrent *Torrent) RequestPeers(peerId []byte, port uint16) ([]Peer, error) {
 	url, err := torrent.buildHttpTrackerUrl(peerId, port)
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println(url)
-
 	httpClient := &http.Client{Timeout: 15 * time.Second}
-	response, err := httpClient.Get(url)
+	response, err := httpClient.Get(url.String())
 	if err != nil {
 		return nil, err
 	}
 	defer response.Body.Close()
 
-	trackerResponse := TrackerResponse{}
-	if err = bencode.Unmarshal(response.Body, &trackerResponse); err != nil {
+	trackerResponse := &TrackerResponse{}
+	if err = bencode.Unmarshal(response.Body, trackerResponse); err != nil {
 		return nil, err
 	}
 
@@ -98,5 +93,5 @@ func (torrent *Torrent) RequestPeers(peerId [20]byte, port uint16) ([]Peer, erro
 		return nil, errors.New("Failure identified in tracker response: " + trackerResponse.FailureReason)
 	}
 
-	return UnmarshalPeer([]byte(trackerResponse.Peers))
+	return UnmarshalPeers([]byte(trackerResponse.Peers))
 }
