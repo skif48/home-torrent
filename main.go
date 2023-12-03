@@ -14,10 +14,7 @@ func main() {
 	do.Provide(injector, http.NewServer)
 
 	server := do.MustInvoke[*http.Server](injector)
-
-	go func() {
-		if err := server.ListenAndServe(); err != nil {
-			panic(err)
-		}
-	}()
+	if err := server.ListenAndServe(); err != nil {
+		panic(err)
+	}
 }

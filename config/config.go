@@ -9,6 +9,11 @@ import (
 	"github.com/samber/do"
 )
 
+var (
+	k      = koanf.New(".")
+	parser = yaml.Parser()
+)
+
 type LoggingConfig struct {
 	LogLevel string `koanf:"log_level"`
 }
@@ -24,21 +29,21 @@ type Config struct {
 	Torrent  *TorrentConfig `koanf:"torrent"`
 }
 
+// for some reason doesn't take into account config file content at all
 func NewConfig(i *do.Injector) (*Config, error) {
 	path := os.Getenv(`CONFIG_PATH`)
 	if path == "" {
-		path = "./torrent_config.yaml"
+		path = "./home_torrent_config.yaml"
 	}
-	k := koanf.New(".")
-	if err := k.Load(file.Provider(path), yaml.Parser()); err != nil {
+	if err := k.Load(file.Provider(path), parser); err != nil {
 		return nil, err
 	}
 
-	config := &Config{}
+	config := Config{}
 
-	if err := k.UnmarshalWithConf(".", config, koanf.UnmarshalConf{Tag: "koanf"}); err != nil {
+	if err := k.Unmarshal("", &config); err != nil {
 		return nil, err
 	}
 
-	return config, nil
+	return &config, nil
 }
