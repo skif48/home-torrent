@@ -19,8 +19,8 @@ type LoggingConfig struct {
 }
 
 type TorrentConfig struct {
-	PeerId   [20]byte `koanf:"peer_id"`
-	PeerPort uint16   `koanf:"peer_port"`
+	PeerId   string `koanf:"peer_id"`
+	PeerPort uint16 `koanf:"peer_port"`
 }
 
 type Config struct {

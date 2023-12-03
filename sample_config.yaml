@@ -1,1 +1,4 @@
 http_port: 8080
+torrent:
+  peer_id: -HT001-k8hj0wgej6ch
+  peer_port: 8080

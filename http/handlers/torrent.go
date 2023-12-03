@@ -76,7 +76,7 @@ func (t *TorrentHandler) RequestPeers(ctx *gin.Context) {
 		return
 	}
 
-	peers, err := torrent.RequestPeers(t.config.Torrent.PeerId, t.config.Torrent.PeerPort)
+	peers, err := torrent.RequestPeers([]byte(t.config.Torrent.PeerId), t.config.Torrent.PeerPort)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
